@@ -37,6 +37,7 @@ type AuthOptions struct {
 	Debug           bool
 	Help            bool
 	KeepOpenSeconds int
+	Manual          bool
 }
 
 func parseAuthFlags(args []string) (*AuthOptions, []string, error) {
@@ -63,6 +64,8 @@ func parseAuthFlags(args []string) (*AuthOptions, []string, error) {
 	authFlags.BoolVar(&opts.Help, "h", false, "Show help for auth command (shorthand)")
 	authFlags.IntVar(&opts.KeepOpenSeconds, "keep-open", 0, "Keep browser open for N seconds after successful auth")
 	authFlags.IntVar(&opts.KeepOpenSeconds, "k", 0, "Keep browser open for N seconds after successful auth (shorthand)")
+	authFlags.BoolVar(&opts.Manual, "manual", false, "Manually enter auth token and cookies")
+	authFlags.BoolVar(&opts.Manual, "m", false, "Manually enter auth token and cookies (shorthand)")
 
 	// Set custom usage
 	authFlags.Usage = func() {
@@ -185,6 +188,10 @@ func handleAuth(args []string, debug bool) (string, string, error) {
 			return "", "", nil // Help was shown, exit gracefully
 		}
 		return "", "", fmt.Errorf("error parsing auth flags: %w", err)
+	}
+
+	if opts.Manual {
+		return interactiveManualAuth()
 	}
 
 	// Show what we're going to do based on options
@@ -363,4 +370,32 @@ func refreshCredentials(debugFlag bool) error {
 
 	fmt.Fprintf(os.Stderr, "nlm: credentials refreshed successfully\n")
 	return nil
+}
+
+func interactiveManualAuth() (string, string, error) {
+	fmt.Println("Manual Authentication Mode")
+	fmt.Println("--------------------------")
+	fmt.Println("1. Open https://notebooklm.google.com/ in your browser")
+	fmt.Println("2. Open Developer Tools (F12) -> Console")
+	fmt.Println("3. Run: copy(WIZ_global_data.SNlM0e) -> Paste Token below")
+	fmt.Print("Token: ")
+
+	byteToken, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", "", fmt.Errorf("read token: %w", err)
+	}
+	fmt.Println() // Newline after silent input
+	token := strings.TrimSpace(string(byteToken))
+
+	fmt.Println("4. Run: copy(document.cookie) -> Paste Cookies below")
+	fmt.Print("Cookies: ")
+
+	byteCookies, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", "", fmt.Errorf("read cookies: %w", err)
+	}
+	fmt.Println() // Newline
+	cookies := strings.TrimSpace(string(byteCookies))
+
+	return persistAuthToDisk(cookies, token, "Manual")
 }

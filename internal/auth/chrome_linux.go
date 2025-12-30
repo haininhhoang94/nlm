@@ -57,3 +57,36 @@ func getChromePath() string {
 	}
 	return ""
 }
+
+// getBrowserPathForProfile returns the path to the browser executable
+func getBrowserPathForProfile(browserName string) string {
+	// Common Linux executable names
+	switch browserName {
+	case "Chrome Canary":
+		return "google-chrome-unstable"
+	case "Brave":
+		return "brave-browser"
+	case "Chrome":
+		return "google-chrome"
+	default:
+		return "google-chrome"
+	}
+}
+
+// getCanaryProfilePath returns the user data directory for Chrome Canary
+func getCanaryProfilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return home + "/.config/google-chrome-unstable"
+}
+
+// getBraveProfilePath returns the user data directory for Brave
+func getBraveProfilePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return home + "/.config/BraveSoftware/Brave-Browser"
+}
